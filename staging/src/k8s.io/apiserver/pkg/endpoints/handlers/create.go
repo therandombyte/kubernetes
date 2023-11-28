@@ -56,8 +56,12 @@ func createHandler(r rest.NamedCreater, scope *RequestScope, admit admission.Int
 		// For performance tracking purposes.
 		ctx, span := tracing.Start(ctx, "Create", traceFields(req)...)
 		defer span.End(500 * time.Millisecond)
-
-		namespace, name, err := scope.Namer.Name(req)
+		
+		// <Nikhil>: RequestScope (in rest.go) object has Namer
+		//  Namer gets namespace from Context. Context has a RequestInfo object that has request values
+		// (request path, verb, api group, version, namespace, resource name etc)
+		namespace, name, err := scope.Namer.Name(req)  
+		fmt.Println("---------- In Create Handler --------", name)
 		if err != nil {
 			if includeName {
 				// name was required, return
@@ -98,6 +102,9 @@ func createHandler(r rest.NamedCreater, scope *RequestScope, admit admission.Int
 		}
 		span.AddEvent("limitedReadBody succeeded", attribute.Int("len", len(body)))
 
+		// <Nikhil>: CreateOptions may be provided when creating an API object.
+		// Kind is a string value representing the REST resource this object represent. 
+		// Servers may infer this from the endpoint the client submits requests to
 		options := &metav1.CreateOptions{}
 		values := req.URL.Query()
 		if err := metainternalversionscheme.ParameterCodec.DecodeParameters(values, scope.MetaGroupVersion, options); err != nil {
@@ -110,9 +117,13 @@ func createHandler(r rest.NamedCreater, scope *RequestScope, admit admission.Int
 			scope.err(err, w, req)
 			return
 		}
+		// gvk: groupVersionKind
+		// filling up the CreateOptions
 		options.TypeMeta.SetGroupVersionKind(metav1.SchemeGroupVersion.WithKind("CreateOptions"))
 
 		defaultGVK := scope.Kind
+		// New returns an empty object that can be used with Create after request data has been put into it. 
+		// This object must be a pointer type for use with Codec.DecodeInto([]byte, runtime.Object)
 		original := r.New()
 
 		validationDirective := fieldValidation(options.FieldValidation)
@@ -121,8 +132,13 @@ func createHandler(r rest.NamedCreater, scope *RequestScope, admit admission.Int
 			decodeSerializer = s.StrictSerializer
 		}
 
+		// DecoderToVersion returns a decoder that ensures objects being read by the provided serializer 
+		// are in the provided group version by default.
 		decoder := scope.Serializer.DecoderToVersion(decodeSerializer, scope.HubGroupVersion)
 		span.AddEvent("About to convert to expected version")
+		// Decode attempts to deserialize the provided data using either the innate typing of the scheme 
+		// or the default kind, group, and version provided. It returns a decoded object as well as the 
+		// kind, group, and version from the serialized data, or an error
 		obj, gvk, err := decoder.Decode(body, &defaultGVK, original)
 		if err != nil {
 			strictError, isStrictError := runtime.AsStrictDecodingError(err)
@@ -156,7 +172,9 @@ func createHandler(r rest.NamedCreater, scope *RequestScope, admit admission.Int
 		}
 		ctx = request.WithNamespace(ctx, namespace)
 
+		// WithAudit is a decorator for a admission phase. It saves annotations of attribute into the audit event.
 		admit = admission.WithAudit(admit)
+		// LogRequestObject fills in the request object into an audit event. The passed runtime.Object will be converted to the given gv.
 		audit.LogRequestObject(req.Context(), obj, objGV, scope.Resource, scope.Subresource, scope.Serializer)
 
 		userInfo, _ := request.UserFrom(ctx)
@@ -191,7 +209,7 @@ func createHandler(r rest.NamedCreater, scope *RequestScope, admit admission.Int
 		// Dedup owner references before updating managed fields
 		dedupOwnerReferencesAndAddWarning(obj, req.Context(), false)
 		result, err := finisher.FinishRequest(ctx, func() (runtime.Object, error) {
-			liveObj, err := scope.Creater.New(scope.Kind)
+			liveObj, err := scope.Creater.New(scope.Kind)   // is this implemented at etcd?
 			if err != nil {
 				return nil, fmt.Errorf("failed to create new object (Create for %v): %v", scope.Kind, err)
 			}

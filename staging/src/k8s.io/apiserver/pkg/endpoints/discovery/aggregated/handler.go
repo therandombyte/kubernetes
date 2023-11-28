@@ -143,10 +143,10 @@ type priorityInfo struct {
 }
 
 func NewResourceManager(path string) ResourceManager {
-	scheme := runtime.NewScheme()
-	codecs := serializer.NewCodecFactory(scheme)
+	scheme := runtime.NewScheme()   // Scheme helps in serialing/de api objects, converts k8s type and kind to golang types
+	codecs := serializer.NewCodecFactory(scheme)  // creates serializer for json/yaml/pub (called codecFactory)
 	utilruntime.Must(apidiscoveryv2beta1.AddToScheme(scheme))
-	rdm := &resourceDiscoveryManager{
+	rdm := &resourceDiscoveryManager{      // contains list of all api groups and resources
 		serializer:        codecs,
 		versionPriorities: make(map[groupVersionKey]priorityInfo),
 	}

@@ -165,7 +165,7 @@ func NewFeatureGate() *featureGate {
 	for k, v := range defaultFeatures {
 		known[k] = v
 	}
-
+	// declaring variable as atomic so any developer cannot modify it directly. Use load and store functions
 	knownValue := &atomic.Value{}
 	knownValue.Store(known)
 

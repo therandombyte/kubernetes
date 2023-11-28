@@ -110,6 +110,7 @@ func (c *Controller) enqueue() {
 
 // Run starts the controller sync loop.
 func (c *Controller) Run(stopCh <-chan struct{}) {
+	fmt.Println("------- RUN CONTROLLER -------")
 	defer utilruntime.HandleCrash()
 	defer c.queue.ShutDown()
 

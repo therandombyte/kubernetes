@@ -54,6 +54,11 @@ const (
 var repeatableAuthorizerTypes = []string{authzmodes.ModeWebhook}
 
 // BuiltInAuthorizationOptions contains all build-in authorization options for API Server
+// <Nikhil>: If designing an authorizer, whats the protocol supported (modes here, kept as a slice)
+//  there should be a policy/config file,
+// protocol version support, TTL for the client sessions, retry sleep time and count (circuit breaker),
+// legacy/backwards support
+// <Nikhil>: But why authorizer and authentication inside server/options folder??
 type BuiltInAuthorizationOptions struct {
 	Modes                       []string
 	PolicyFile                  string
@@ -66,7 +71,7 @@ type BuiltInAuthorizationOptions struct {
 	// before we fail the webhook call in order to limit the fan out that ensues when the system is degraded.
 	WebhookRetryBackoff *wait.Backoff
 
-	// AuthorizationConfigurationFile is mutually exclusive with all of:
+	// AuthorizationConfigurationFile is mutually exclusive (cannot occur together) with all of:
 	//	- Modes
 	//	- WebhookConfigFile
 	//	- WebHookVersion
@@ -78,6 +83,7 @@ type BuiltInAuthorizationOptions struct {
 }
 
 // NewBuiltInAuthorizationOptions create a BuiltInAuthorizationOptions with default value
+// <Nikhil>: Webhook Version hardcoded??
 func NewBuiltInAuthorizationOptions() *BuiltInAuthorizationOptions {
 	return &BuiltInAuthorizationOptions{
 		Modes:                       []string{},
@@ -89,6 +95,7 @@ func NewBuiltInAuthorizationOptions() *BuiltInAuthorizationOptions {
 }
 
 // Complete modifies authorization options
+// set modes: [Node RBAC]
 func (o *BuiltInAuthorizationOptions) Complete() []error {
 	if len(o.AuthorizationConfigurationFile) == 0 && len(o.Modes) == 0 {
 		o.Modes = []string{authzmodes.ModeAlwaysAllow}
@@ -263,6 +270,7 @@ func (o *BuiltInAuthorizationOptions) ToAuthorizationConfig(versionedInformerFac
 
 		// load the file and check for errors
 		authorizationConfiguration, err = load.LoadFromFile(o.AuthorizationConfigurationFile)
+
 		if err != nil {
 			return nil, fmt.Errorf("failed to load AuthorizationConfiguration from file: %v", err)
 		}
@@ -293,7 +301,13 @@ func (o *BuiltInAuthorizationOptions) ToAuthorizationConfig(versionedInformerFac
 // buildAuthorizationConfiguration converts existing flags to the AuthorizationConfiguration format
 func (o *BuiltInAuthorizationOptions) buildAuthorizationConfiguration() (*authzconfig.AuthorizationConfiguration, error) {
 	var authorizers []authzconfig.AuthorizerConfiguration
-
+	
+	/*
+	variadic function: 
+	Within the function, the type of args is equivalent to []int. We can call len(args), iterate over it with range, etc.
+	If you already have multiple args in a slice, apply them to a variadic function using func(slice...).
+	By this loguc, Modes should be a slice
+	*/
 	if len(o.Modes) != sets.NewString(o.Modes...).Len() {
 		return nil, fmt.Errorf("modes should not be repeated in --authorization-mode")
 	}

@@ -48,6 +48,7 @@ type ControllerRunner interface {
 
 // DynamicFileCAContent provides a CAContentProvider that can dynamically react to new file content
 // It also fulfills the authenticator interface to provide verifyoptions
+// RateLimitingInterface helps to rate limit the workqueue 
 type DynamicFileCAContent struct {
 	name string
 
@@ -117,7 +118,6 @@ func (c *DynamicFileCAContent) loadCABundle() error {
 	}
 	c.caBundle.Store(caBundleAndVerifier)
 	klog.V(2).InfoS("Loaded a new CA Bundle and Verifier", "name", c.Name())
-
 	for _, listener := range c.listeners {
 		listener.Enqueue()
 	}

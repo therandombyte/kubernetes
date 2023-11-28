@@ -206,6 +206,7 @@ func (c *Container) Dispatch(httpWriter http.ResponseWriter, httpRequest *http.R
 
 // Dispatch the incoming Http Request to a matching WebService.
 func (c *Container) dispatch(httpWriter http.ResponseWriter, httpRequest *http.Request) {
+	
 	// so we can assign a compressing one later
 	writer := httpWriter
 
@@ -237,6 +238,7 @@ func (c *Container) dispatch(httpWriter http.ResponseWriter, httpRequest *http.R
 			c.webServices,
 			httpRequest)
 	}()
+	
 	if err != nil {
 		// a non-200 response (may be compressed) has already been written
 		// run container filters anyway ; they should not touch the response...

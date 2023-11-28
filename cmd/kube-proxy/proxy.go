@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"fmt"
 	"os"
 
 	"k8s.io/component-base/cli"
@@ -27,6 +28,7 @@ import (
 )
 
 func main() {
+	fmt.Println("------- Building Kube Proxy -------")
 	command := app.NewProxyCommand()
 	code := cli.Run(command)
 	os.Exit(code)

@@ -591,11 +591,15 @@ func startNamespaceController(ctx context.Context, controllerContext ControllerC
 
 func startModifiedNamespaceController(ctx context.Context, controllerContext ControllerContext, namespaceKubeClient clientset.Interface, nsKubeconfig *restclient.Config) (controller.Interface, bool, error) {
 
+	// gets a rest/http client from client-go to retrieve k8s object metadata
 	metadataClient, err := metadata.NewForConfig(nsKubeconfig)
 	if err != nil {
 		return nil, true, err
 	}
 
+	// DiscoveryInterface holds the methods that discover server-supported API groups, versions and resources.
+	// Discovery() retrieves the DiscoveryClient
+	// Skipped: ServerPreferredResources uses the provided discovery interface to look up preferred resources
 	discoverResourcesFn := namespaceKubeClient.Discovery().ServerPreferredNamespacedResources
 
 	namespaceController := namespacecontroller.NewNamespaceController(

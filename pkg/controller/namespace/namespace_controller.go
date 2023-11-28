@@ -53,7 +53,9 @@ const (
 // NamespaceController is responsible for performing actions dependent upon a namespace phase
 type NamespaceController struct {
 	// lister that can list namespaces from a shared cache
-	lister corelisters.NamespaceLister
+	// uses indexer from client-go/tools/cache.go to get the namespaces
+	// NamespaceLister() is in cient-go/listers/namespace.go
+	lister corelisters.NamespaceLister    
 	// returns true when the namespace cache is ready
 	listerSynced cache.InformerSynced
 	// namespaces that have been queued up for processing by workers

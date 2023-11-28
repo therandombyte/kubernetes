@@ -188,11 +188,11 @@ var toDiscoveryKubeVerb = map[string]string{
 
 // Install handlers for API resources.
 func (a *APIInstaller) Install() ([]metav1.APIResource, []*storageversion.ResourceInfo, *restful.WebService, []error) {
-	var apiResources []metav1.APIResource
-	var resourceInfos []*storageversion.ResourceInfo
+	var apiResources []metav1.APIResource              // specifies the name of a resource and whether it is namespaced
+	var resourceInfos []*storageversion.ResourceInfo   // contains information to register the resource to the storage version API
 	var errors []error
 	ws := a.newWebService()
-
+	
 	// Register the paths in a deterministic (sorted) order to get a deterministic swagger spec.
 	paths := make([]string, len(a.group.Storage))
 	var i int = 0
@@ -201,8 +201,15 @@ func (a *APIInstaller) Install() ([]metav1.APIResource, []*storageversion.Resour
 		i++
 	}
 	sort.Strings(paths)
+	fmt.Println("---------- Register API Handlers ---------",)
+	fmt.Println("Path Prefix: ", a.prefix)
 	for _, path := range paths {
 		apiResource, resourceInfo, err := a.registerResourceHandlers(path, a.group.Storage[path], ws)
+		if path == "namespaces" {
+			fmt.Println("Registering for Path: ", path)
+			fmt.Println("Registered api resource: ", apiResource.Name)
+		}
+	
 		if err != nil {
 			errors = append(errors, fmt.Errorf("error in registering resource: %s, %v", path, err))
 		}
@@ -225,7 +232,7 @@ func (a *APIInstaller) newWebService() *restful.WebService {
 	// Backwards compatibility, we accepted objects with empty content-type at V1.
 	// If we stop using go-restful, we can default empty content-type to application/json on an
 	// endpoint by endpoint basis
-	ws.Consumes("*/*")
+	ws.Consumes("*/*")      // specifies that this WebService can consume one or more MIME types. Http requests must have one of these values set for the Content-Type header.
 	mediaTypes, streamMediaTypes := negotiation.MediaTypesForSerializer(a.group.Serializer)
 	ws.Produces(append(mediaTypes, streamMediaTypes...)...)
 	ws.ApiVersion(a.group.GroupVersion.String())
@@ -281,7 +288,6 @@ func GetResourceKind(groupVersion schema.GroupVersion, storage rest.Storage, typ
 
 func (a *APIInstaller) registerResourceHandlers(path string, storage rest.Storage, ws *restful.WebService) (*metav1.APIResource, *storageversion.ResourceInfo, error) {
 	admit := a.group.Admit
-
 	optionsExternalVersion := a.group.GroupVersion
 	if a.group.OptionsExternalVersion != nil {
 		optionsExternalVersion = *a.group.OptionsExternalVersion
@@ -295,6 +301,13 @@ func (a *APIInstaller) registerResourceHandlers(path string, storage rest.Storag
 	group, version := a.group.GroupVersion.Group, a.group.GroupVersion.Version
 
 	fqKindToRegister, err := GetResourceKind(a.group.GroupVersion, storage, a.group.Typer)
+
+	if path == "namespaces" {
+		fmt.Println("--------- Register Resource Handlers --------")
+		fmt.Println("Version: ", a.group.GroupVersion)
+		fmt.Println("Resource after split: ", resource)
+		fmt.Println("Kind to Register: ", fqKindToRegister.Group)
+	}
 	if err != nil {
 		return nil, nil, err
 	}
@@ -772,10 +785,10 @@ func (a *APIInstaller) registerResourceHandlers(path string, storage rest.Storag
 				warnings = append(warnings, deprecation.WarningMessage(versionedPtrWithGVK))
 			}
 		}
-
+		// ----- ACTIONS -------
 		switch action.Verb {
 		case "GET": // Get a resource.
-			var handler restful.RouteFunction
+			var handler restful.RouteFunction    // declares the signature of a function that can be bound to a Route
 			if isGetterWithOptions {
 				handler = restfulGetResourceWithOptions(getterWithOptions, reqScope, isSubresource)
 			} else {

@@ -316,6 +316,8 @@ type Namer interface {
 	Namespace(obj Object) (string, error)
 }
 
+// <Nikhil>: Hey Object, Want to become part of scheme, you will get a kind, version and group.
+// API types are registered with scheme.
 // Object interface must be supported by all API types registered with Scheme. Since objects in a scheme are
 // expected to be serialized to the wire, the interface an Object must provide to the Scheme allows
 // serializers to set the kind, version, and group the object is represented as. An Object may choose
@@ -340,6 +342,7 @@ type CacheableObject interface {
 	// GetObject() is the owner of returned object. The reason for making a copy
 	// is to avoid bugs, where caller modifies the object and forgets to copy it,
 	// thus modifying the object for everyone.
+	// <Nikhil>: Callers might accidently modify an object, better to copy the object and return to caller
 	// The object returned by GetObject should be the same as the one that is supposed
 	// to be passed to <encode> function in CacheEncode method.
 	// If CacheableObject is a wrapper, the copy of wrapped object should be returned.

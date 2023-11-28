@@ -220,6 +220,7 @@ func (s *SecureServingInfo) Serve(handler http.Handler, shutdownTimeout time.Dur
 // have been processed.
 // This function does not block
 // TODO: make private when insecure serving is gone from the kube-apiserver
+// calls the http library Serve()
 func RunServer(
 	server *http.Server,
 	ln net.Listener,
@@ -249,9 +250,8 @@ func RunServer(
 		if server.TLSConfig != nil {
 			listener = tls.NewListener(listener, server.TLSConfig)
 		}
-
+		fmt.Println("------- RunServer() About to serve secure_serving from go http library, buck stops here -----------")
 		err := server.Serve(listener)
-
 		msg := fmt.Sprintf("Stopped listening on %s", ln.Addr().String())
 		select {
 		case <-stopCh:

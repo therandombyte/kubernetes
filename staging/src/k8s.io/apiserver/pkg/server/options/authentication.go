@@ -40,6 +40,8 @@ import (
 
 // DefaultAuthWebhookRetryBackoff is the default backoff parameters for
 // both authentication and authorization webhook used by the apiserver.
+// <Nikhil>: So happy to see some hardcoded values :)
+// Backoff is not just one timer, hence this is a struct, its a circuit breaker also
 func DefaultAuthWebhookRetryBackoff() *wait.Backoff {
 	return &wait.Backoff{
 		Duration: 500 * time.Millisecond,
@@ -48,7 +50,11 @@ func DefaultAuthWebhookRetryBackoff() *wait.Backoff {
 		Steps:    5,
 	}
 }
-
+// <Nikhil>: Designing an authenticator, HTTP headers have to be weighed in.
+// Then, header values need to be validated (white space, case insensitive, missing headers based on filter)
+// During validation, errors to be concatenated instead of abrupting at the first error, so error needs to be a slice.
+// Client certificate needs to be verified against a CA file. Need a listener if the CA file changes
+// But Why username in headers??
 type RequestHeaderAuthenticationOptions struct {
 	// ClientCAFile is the root certificate bundle to verify client certificates on incoming requests
 	// before trusting usernames in headers.
@@ -99,6 +105,7 @@ func checkForWhiteSpaceOnly(flag string, headerNames ...string) error {
 	return nil
 }
 
+// <golang>: EqualFold(): string comparison with case insensitivity
 func caseInsensitiveHas(headers []string, header string) bool {
 	for _, h := range headers {
 		if strings.EqualFold(h, header) {
@@ -108,6 +115,9 @@ func caseInsensitiveHas(headers []string, header string) bool {
 	return false
 }
 
+// <golang>: pflag library for POSIX compliance. Read the comments from flag.go in spf13, its good
+// every command needs flags, so this library is good to know
+// StringSliceVar(): Multiple headers/flags can be absorbed into a Silce
 func (s *RequestHeaderAuthenticationOptions) AddFlags(fs *pflag.FlagSet) {
 	if s == nil {
 		return
@@ -135,6 +145,7 @@ func (s *RequestHeaderAuthenticationOptions) AddFlags(fs *pflag.FlagSet) {
 
 // ToAuthenticationRequestHeaderConfig returns a RequestHeaderConfig config object for these options
 // if necessary, nil otherwise.
+// <Nikhil>: NewDynamicCAContentFromFile loads the ca files from /etc/kubernetes/pki. Who placed those files?
 func (s *RequestHeaderAuthenticationOptions) ToAuthenticationRequestHeaderConfig() (*authenticatorfactory.RequestHeaderConfig, error) {
 	if len(s.ClientCAFile) == 0 {
 		return nil, nil

@@ -45,8 +45,8 @@ const (
 type ServerRunOptions struct {
 	AdvertiseAddress net.IP
 
-	CorsAllowedOriginList       []string
-	HSTSDirectives              []string
+	CorsAllowedOriginList       []string   // allows restricted resources to be accessed from other domain
+	HSTSDirectives              []string   // force users browser to use HTTPS instead of HTTP
 	ExternalHost                string
 	MaxRequestsInFlight         int
 	MaxMutatingRequestsInFlight int
@@ -70,7 +70,7 @@ type ServerRunOptions struct {
 	// shutdown of the HTTP Server. If false, we initiate a shutdown of the HTTP
 	// Server as soon as ShutdownDelayDuration has elapsed.
 	// If enabled, after ShutdownDelayDuration elapses, any incoming request is
-	// rejected with a 429 status code and a 'Retry-After' response.
+	// rejected with a 429 status code and a 'Retry-After' response. (429 - too many requests)
 	ShutdownSendRetryAfter bool
 
 	// ShutdownWatchTerminationGracePeriod, if set to a positive value,
@@ -142,7 +142,6 @@ func (s *ServerRunOptions) DefaultAdvertiseAddress(secure *SecureServingOptions)
 		}
 		s.AdvertiseAddress = hostIP
 	}
-
 	return nil
 }
 

@@ -232,11 +232,18 @@ func (m *PathRecorderMux) UnlistedHandlePrefix(path string, handler http.Handler
 
 // ServeHTTP makes it an http.Handler
 func (m *PathRecorderMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path == "/api/v1/namespaces" {
+		//fmt.Println("------------ In pathrecorder ServerHTTP ---------")
+		//fmt.Println("------------ Path Handler ---------", m.mux.Load().(*pathHandler))
+		//fmt.Println("------------ Path to Handler ---------", m.pathToHandler)
+
+	}
 	m.mux.Load().(*pathHandler).ServeHTTP(w, r)
 }
 
 // ServeHTTP makes it an http.Handler
 func (h *pathHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	
 	if exactHandler, ok := h.pathToHandler[r.URL.Path]; ok {
 		klog.V(5).Infof("%v: %q satisfied by exact match", h.muxName, r.URL.Path)
 		exactHandler.ServeHTTP(w, r)
@@ -245,6 +252,10 @@ func (h *pathHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	for _, prefixHandler := range h.prefixHandlers {
 		if strings.HasPrefix(r.URL.Path, prefixHandler.prefix) {
+			if r.URL.Path == "/api/v1/namespaces" {
+				//fmt.Println("------------ Request ---------", r)
+				//fmt.Println("------------ Handler ---------", prefixHandler.handler)
+			}
 			klog.V(5).Infof("%v: %q satisfied by prefix %v", h.muxName, r.URL.Path, prefixHandler.prefix)
 			prefixHandler.handler.ServeHTTP(w, r)
 			return

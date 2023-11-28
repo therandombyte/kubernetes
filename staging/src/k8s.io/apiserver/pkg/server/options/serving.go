@@ -331,15 +331,17 @@ func (s *SecureServingOptions) ApplyTo(config **server.SecureServingInfo) error 
 	return nil
 }
 
+// keyCert = {/etc/kubernetes/pki/apiserver.crt /etc/kubernetes/pki/apiserver.key}
 func (s *SecureServingOptions) MaybeDefaultWithSelfSignedCerts(publicAddress string, alternateDNS []string, alternateIPs []net.IP) error {
 	if s == nil || (s.BindPort == 0 && s.Listener == nil) {
 		return nil
 	}
 	keyCert := &s.ServerCert.CertKey
+	// returns from here
 	if len(keyCert.CertFile) != 0 || len(keyCert.KeyFile) != 0 {
 		return nil
 	}
-
+	
 	canReadCertAndKey := false
 	if len(s.ServerCert.CertDirectory) > 0 {
 		if len(s.ServerCert.PairName) == 0 {
@@ -353,7 +355,7 @@ func (s *SecureServingOptions) MaybeDefaultWithSelfSignedCerts(publicAddress str
 			canReadCertAndKey = canRead
 		}
 	}
-
+	
 	if !canReadCertAndKey {
 		// add either the bind address or localhost to the valid alternates
 		if s.BindAddress.IsUnspecified() {

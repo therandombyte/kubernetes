@@ -1020,6 +1020,9 @@ func (r *Request) request(ctx context.Context, fn func(*http.Request, *http.Resp
 		if err != nil {
 			return err
 		}
+		//if r.resource == "namespaces" && r.verb == "POST"{
+		//	fmt.Println("------- NAMESPACE HTTP REQUEST -----", req)
+		//}
 		resp, err := client.Do(req)
 		// The value -1 or a value of 0 with a non-nil Body indicates that the length is unknown.
 		// https://pkg.go.dev/net/http#Request

@@ -491,7 +491,11 @@ func (s *GenericAPIServer) PrepareRun() preparedGenericAPIServer {
 // |                       listenerStoppedCh
 // |                               |
 // |      HTTPServerStoppedListening (httpServerStoppedListeningCh)
+
+// <Nikhil>: Spawns server calling NonBlockingRun() on line 579 which invokes Serve() of secure_serving.go 
+// Serve()invokes RunServer() which calls serve() in golang http library
 func (s preparedGenericAPIServer) Run(stopCh <-chan struct{}) error {
+	fmt.Println("------- RUN Generic API Server -------")
 	delayedStopCh := s.lifecycleSignals.AfterShutdownDelayDuration
 	shutdownInitiatedCh := s.lifecycleSignals.ShutdownInitiated
 
@@ -710,6 +714,7 @@ func (s preparedGenericAPIServer) NonBlockingRun(stopCh <-chan struct{}, shutdow
 	var listenerStoppedCh <-chan struct{}
 	if s.SecureServingInfo != nil && s.Handler != nil {
 		var err error
+		fmt.Println("------- 2. NonBlockingRun invokes Serve() of secure_string.go-------")
 		stoppedCh, listenerStoppedCh, err = s.SecureServingInfo.Serve(s.Handler, shutdownTimeout, internalStopCh)
 		if err != nil {
 			close(internalStopCh)

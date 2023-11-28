@@ -465,6 +465,8 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 	}
 
 	// share the transport between all clients
+	// For control over proxies, TLS configuration, keep-alives, compression, and other settings, create a Transport (struct)
+	// For control over HTTP client headers, redirect policy, and other settings, create a Client
 	httpClient, err := rest.HTTPClientFor(&configShallowCopy)
 	if err != nil {
 		return nil, err

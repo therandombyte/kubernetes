@@ -172,7 +172,6 @@ func NewExposeFlags(ioStreams genericiooptions.IOStreams) *ExposeServiceFlags {
 // NewCmdExposeService is a command to expose the service from user's input
 func NewCmdExposeService(f cmdutil.Factory, streams genericiooptions.IOStreams) *cobra.Command {
 	flags := NewExposeFlags(streams)
-
 	validArgs := []string{}
 	resources := regexp.MustCompile(`\s*,`).Split(exposeResources, -1)
 	for _, r := range resources {

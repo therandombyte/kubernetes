@@ -643,6 +643,7 @@ func (o *BuiltInAuthenticationOptions) ApplyTo(authInfo *genericapiserver.Authen
 }
 
 // ApplyAuthorization will conditionally modify the authentication options based on the authorization options
+// sets o.Anonymous.Allow = true
 func (o *BuiltInAuthenticationOptions) ApplyAuthorization(authorization *BuiltInAuthorizationOptions) {
 	if o == nil || authorization == nil || o.Anonymous == nil {
 		return

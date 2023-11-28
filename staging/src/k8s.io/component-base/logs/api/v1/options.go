@@ -222,6 +222,7 @@ func apply(c *LoggingConfiguration, options *LoggingOptions, featureGate feature
 	}
 
 	oldP := applyParameters.Load()
+	
 	if oldP != nil {
 		switch ReapplyHandling {
 		case ReapplyHandlingError:

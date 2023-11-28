@@ -65,14 +65,14 @@ func BuildGenericConfig(
 
 	lastErr error,
 ) {
-	genericConfig = genericapiserver.NewConfig(legacyscheme.Codecs)
-	genericConfig.MergedResourceConfig = controlplane.DefaultAPIResourceConfigSource()
+	genericConfig = genericapiserver.NewConfig(legacyscheme.Codecs)                      // gets a big ass config object
+	genericConfig.MergedResourceConfig = controlplane.DefaultAPIResourceConfigSource()   // dont serve alpha and beta versions of API resources
 
-	if lastErr = s.GenericServerRunOptions.ApplyTo(genericConfig); lastErr != nil {
+	if lastErr = s.GenericServerRunOptions.ApplyTo(genericConfig); lastErr != nil {     // adding run options to config (cors, externaladdress, timeout, )
 		return
 	}
 
-	if lastErr = s.SecureServing.ApplyTo(&genericConfig.SecureServing, &genericConfig.LoopbackClientConfig); lastErr != nil {
+	if lastErr = s.SecureServing.ApplyTo(&genericConfig.SecureServing, &genericConfig.LoopbackClientConfig); lastErr != nil {  // add serving options to config (listener, CA, SNI, TLS)
 		return
 	}
 
@@ -86,17 +86,17 @@ func BuildGenericConfig(
 	genericConfig.LoopbackClientConfig.DisableCompression = true
 
 	kubeClientConfig := genericConfig.LoopbackClientConfig
-	clientgoExternalClient, err := clientgoclientset.NewForConfig(kubeClientConfig)
+	clientgoExternalClient, err := clientgoclientset.NewForConfig(kubeClientConfig)    // creates clientset for accessing api groups features, creates http rate limiter
 	if err != nil {
 		lastErr = fmt.Errorf("failed to create real external clientset: %v", err)
 		return
 	}
-	versionedInformers = clientgoinformers.NewSharedInformerFactory(clientgoExternalClient, 10*time.Minute)
+	versionedInformers = clientgoinformers.NewSharedInformerFactory(clientgoExternalClient, 10*time.Minute)   // bosco
 
-	if lastErr = s.Features.ApplyTo(genericConfig, clientgoExternalClient, versionedInformers); lastErr != nil {
+	if lastErr = s.Features.ApplyTo(genericConfig, clientgoExternalClient, versionedInformers); lastErr != nil {  // add profiling params
 		return
 	}
-	if lastErr = s.APIEnablement.ApplyTo(genericConfig, controlplane.DefaultAPIResourceConfigSource(), legacyscheme.Scheme); lastErr != nil {
+	if lastErr = s.APIEnablement.ApplyTo(genericConfig, controlplane.DefaultAPIResourceConfigSource(), legacyscheme.Scheme); lastErr != nil {   // override MergedResourceConfig with defaults and registry
 		return
 	}
 	if lastErr = s.EgressSelector.ApplyTo(genericConfig); lastErr != nil {
@@ -157,10 +157,24 @@ func BuildGenericConfig(
 		genericConfig.DisabledPostStartHooks.Insert(rbacrest.PostStartHookName)
 	}
 
-	lastErr = s.Audit.ApplyTo(genericConfig)
+	// adding audit options (policy rule evaluator and backend (log and webhook backend)) to server config
+	// Implementation details: load an audit policy from disk, decode it, validate it, evaluate the policy rule
+	lastErr = s.Audit.ApplyTo(genericConfig)  
 	if lastErr != nil {
 		return
 	}
+
+	/* AggregatedDiscoveryEndpoint is a api discovery endpoint that knows all apis and uses HTTP Etag. 
+		The ETag (or entity tag) HTTP response header is an identifier for a specific version of a resource. 
+		It lets caches be more efficient and save bandwidth, as a web server does not need to resend a full 
+		response if the content was not changed
+		NewResourceManager() has resourceDiscoveryManager that has list of all api groups and resources and
+		the http handler function
+		NewResourceManager() also creates a serializer for yaml/json/pb. 
+		Implementation details: Creates a Scheme which converts k8s kind and api type to go types. 
+			For conversion, scheme uses a function that does this conversion from a to b. 
+			This function will be added to a lookup table
+	*/
 
 	if utilfeature.DefaultFeatureGate.Enabled(genericfeatures.AggregatedDiscoveryEndpoint) {
 		genericConfig.AggregatedDiscoveryGroupManager = aggregated.NewResourceManager("apis")
@@ -170,7 +184,8 @@ func BuildGenericConfig(
 }
 
 // BuildAuthorizer constructs the authorizer. If authorization is not set in s, it returns nil, nil, false, nil
-func BuildAuthorizer(s controlplaneapiserver.CompletedOptions, egressSelector *egressselector.EgressSelector, versionedInformers clientgoinformers.SharedInformerFactory) (authorizer.Authorizer, authorizer.RuleResolver, bool, error) {
+func BuildAuthorizer(s controlplaneapiserver.CompletedOptions, egressSelector *egressselector.EgressSelector, 
+	versionedInformers clientgoinformers.SharedInformerFactory) (authorizer.Authorizer, authorizer.RuleResolver, bool, error) {
 	authorizationConfig, err := s.Authorization.ToAuthorizationConfig(versionedInformers)
 	if err != nil {
 		return nil, nil, false, err

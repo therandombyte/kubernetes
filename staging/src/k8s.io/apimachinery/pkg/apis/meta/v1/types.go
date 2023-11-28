@@ -548,7 +548,7 @@ const (
 
 // CreateOptions may be provided when creating an API object.
 type CreateOptions struct {
-	TypeMeta `json:",inline"`
+	TypeMeta `json:",inline"`    // contains kind and version, because thats type
 
 	// When present, indicates that modifications should not be
 	// persisted. An invalid or unrecognized dryRun directive will

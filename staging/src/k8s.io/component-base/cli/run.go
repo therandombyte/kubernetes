@@ -142,7 +142,7 @@ func run(cmd *cobra.Command) (logsInitialized bool, err error) {
 			logsInitialized = true
 		}
 	}
-
+	fmt.Println("----------- CMD EXECUTE ---------")
 	err = cmd.Execute()
 	return
 }

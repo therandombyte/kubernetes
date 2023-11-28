@@ -121,7 +121,9 @@ type director struct {
 
 func (d director) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	path := req.URL.Path
-
+	if req.URL.Path == "/api/v1/namespaces" {
+		//fmt.Println("------------ In Handler.go ServeHTTP (Director) ------- ")
+	}
 	// check to see if our webservices want to claim this path
 	for _, ws := range d.goRestfulContainer.RegisteredWebServices() {
 		switch {
@@ -186,5 +188,8 @@ func serviceErrorHandler(s runtime.NegotiatedSerializer, serviceErr restful.Serv
 
 // ServeHTTP makes it an http.Handler
 func (a *APIServerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path == "/api/v1/namespaces" {
+		//fmt.Println("------------ In Handler.go ServeHTTP (APIServerHandler) ------- ")
+	}
 	a.FullHandlerChain.ServeHTTP(w, r)
 }

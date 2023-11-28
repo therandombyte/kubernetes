@@ -182,7 +182,7 @@ func ResyncPeriod(c *config.CompletedConfig) func() time.Duration {
 func Run(ctx context.Context, c *config.CompletedConfig) error {
 	logger := klog.FromContext(ctx)
 	stopCh := ctx.Done()
-
+	fmt.Println("--------- Starting Controller Manager ------")
 	// To help debugging, immediately log version
 	logger.Info("Starting", "version", version.Get())
 

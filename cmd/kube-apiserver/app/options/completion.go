@@ -45,6 +45,11 @@ type CompletedOptions struct {
 
 // Complete set default ServerRunOptions.
 // Should be called after kube-apiserver flags parsed.
+// <Nikhil>: another hardcoding on line 60, thats great
+// options.Complete(): sets default advertised address to 172.18.0.2
+// 			   get api server key and cert, set mode as Node and RBAC, set Anonymous.Allow= true
+//			   set sa.key as sa signing key file & sa issuer as https://kubernetes.default.svc.cluster.local
+//			   generate JWT token for sa key file
 func (opts *ServerRunOptions) Complete() (CompletedOptions, error) {
 	if opts == nil {
 		return CompletedOptions{completedOptions: &completedOptions{}}, nil
@@ -100,9 +105,10 @@ func getServiceIPAndRanges(serviceClusterIPRanges string) (net.IP, net.IPNet, ne
 	}
 
 	var apiServerServiceIP net.IP
-	var primaryServiceIPRange net.IPNet
+	var primaryServiceIPRange net.IPNet     // IP and mask will represent a network
 	var secondaryServiceIPRange net.IPNet
 	var err error
+
 	// nothing provided by user, use default range (only applies to the Primary)
 	if len(serviceClusterIPRangeList) == 0 {
 		var primaryServiceClusterCIDR net.IPNet

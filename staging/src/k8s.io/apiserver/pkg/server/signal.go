@@ -22,14 +22,24 @@ import (
 	"os/signal"
 )
 
+// <gotrick>: If we queue up lots of goroutines, we can have them all start at the same time
+// by closing the signal channel.
+// the SIGHUP signal is sent when a program loses its controlling terminal.
+// The SIGINT signal is sent when the user at the controlling terminal presses the interrupt character
 var onlyOneSignalHandler = make(chan struct{})
-var shutdownHandler chan os.Signal
+// channel for sending OS signals (SIGINT, SIGTERM), to be initialized later. Recommended to be buffered
+var shutdownHandler chan os.Signal   
+
 
 // SetupSignalHandler registered for SIGTERM and SIGINT. A stop channel is returned
 // which is closed on one of these signals. If a second signal is caught, the program
 // is terminated with exit code 1.
 // Only one of SetupSignalContext and SetupSignalHandler should be called, and only can
 // be called once.
+// <gotrick>Usage of context package to signal the completion of a task executed in a goroutine by calling 
+// cancel() function created by the context.WithCancel(...) sends a value to the channel ctx.Done() 
+// that will xyz (ex: end the for loop and exit.)
+
 func SetupSignalHandler() <-chan struct{} {
 	return SetupSignalContext().Done()
 }
@@ -43,7 +53,10 @@ func SetupSignalContext() context.Context {
 	shutdownHandler = make(chan os.Signal, 2)
 
 	ctx, cancel := context.WithCancel(context.Background())
-	signal.Notify(shutdownHandler, shutdownSignals...)
+	// Notify disables the default behavior for a given set of asynchronous signals and instead 
+	// delivers them over one or more registered channels. Specifically, it applies to the signals 
+	// SIGHUP, SIGINT, SIGQUIT, SIGABRT, and SIGTERM
+	signal.Notify(shutdownHandler, shutdownSignals...)  // registering channel to receive 
 	go func() {
 		<-shutdownHandler
 		cancel()

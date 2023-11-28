@@ -464,6 +464,8 @@ func (s *APIAggregator) PrepareRun() (preparedAPIAggregator, error) {
 	return preparedAPIAggregator{APIAggregator: s, runnable: prepared}, nil
 }
 
+// 
+// When waiting for multiple goroutines to finish, you may prefer to use a WaitGroup
 func (s preparedAPIAggregator) Run(stopCh <-chan struct{}) error {
 	return s.runnable.Run(stopCh)
 }

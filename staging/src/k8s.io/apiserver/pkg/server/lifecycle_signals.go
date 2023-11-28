@@ -169,6 +169,11 @@ func newLifecycleSignals() lifecycleSignals {
 	}
 }
 
+// <gotrick> the channel can be of literally any type, since no data is actually sent, 
+// and the channel is just used as a signaling mechanism. But in the interest of 
+// memory utilization, struct{} is the smallest data type available in Go, 
+// since it contains literally nothing, so no allocation necessary, which is why it's 
+// typically used in such scenarios.
 func newNamedChannelWrapper(name string) lifecycleSignal {
 	return &namedChannelWrapper{
 		name: name,

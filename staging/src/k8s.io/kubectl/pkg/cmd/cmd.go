@@ -307,6 +307,9 @@ func HandlePluginCommand(pluginHandler PluginHandler, cmdArgs []string, exactMat
 
 // NewKubectlCommand creates the `kubectl` command and its nested children.
 func NewKubectlCommand(o KubectlOptions) *cobra.Command {
+	// NewWarningWriter returns an implementation of WarningHandler that outputs code 299 (Miscellaneous Persistent Warning)
+	// warnings to the specified writer.
+	// WarningHandler is an interface for handling warning headers
 	warningHandler := rest.NewWarningWriter(o.IOStreams.ErrOut, rest.WarningWriterOptions{Deduplicate: true, Color: term.AllowsColorOutput(o.IOStreams.ErrOut)})
 	warningsAsErrors := false
 	// Parent command to which all subcommands are added.
@@ -324,13 +327,19 @@ func NewKubectlCommand(o KubectlOptions) *cobra.Command {
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 			rest.SetDefaultWarningHandler(warningHandler)
 
+			// <gotrick> command completion when pressing tab on shell
+			/* The way it works when the user press [TAB] the completion functions as generated 
+				for the target shell will ask the binary to complete the command with the hidden 
+				command __complete command argument to the binary and the binary itself will output 
+				then the completion using cobra library.
+			*/
 			if cmd.Name() == cobra.ShellCompRequestCmd {
 				// This is the __complete or __completeNoDesc command which
 				// indicates shell completion has been requested.
-				plugin.SetupPluginCompletion(cmd, args)
+				plugin.SetupPluginCompletion(cmd, args)   // <later, command completion>
 			}
 
-			return initProfiling()
+			return initProfiling() // <later, profiling>
 		},
 		PersistentPostRunE: func(*cobra.Command, []string) error {
 			if err := flushProfiling(); err != nil {

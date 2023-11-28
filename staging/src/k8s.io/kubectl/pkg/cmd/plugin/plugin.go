@@ -56,7 +56,7 @@ var (
 		- begin with "kubectl-"
 `))
 
-	ValidPluginFilenamePrefixes = []string{"kubectl"}
+	ValidPluginFilenamePrefixes = []string{"kubectl"}  // <go>slice omits the number between []
 )
 
 func NewCmdPlugin(streams genericiooptions.IOStreams) *cobra.Command {

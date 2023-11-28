@@ -85,6 +85,21 @@ others. The API Server services REST operations and provides the frontend to the
 cluster's shared state through which all other components interact.`,
 
 		// stop printing usage when the command errors
+		// The *Run functions are executed in the following order:
+		//   * PersistentPreRun()
+		//   * PreRun()
+		//   * Run()
+		//   * PostRun()
+		//   * PersistentPostRun()
+		// All functions get the same args, the arguments after the command name.
+		// The *PreRun and *PostRun functions will only be executed if the Run function of the current
+		// command has been declared.
+		//
+		// PersistentPreRun: children of this command will inherit and execute.
+		// PersistentPreRunE: PersistentPreRun but returns an error.
+		// PreRun: children of this command will not inherit.
+		// Run: Typically the actual work function. Most commands will only implement this.
+		// PersistentPostRun: children of this command will inherit and execute after PostRun.
 		SilenceUsage: true,
 		PersistentPreRunE: func(*cobra.Command, []string) error {
 			// silence client-go warnings.
@@ -104,18 +119,26 @@ cluster's shared state through which all other components interact.`,
 			cliflag.PrintFlags(fs)
 
 			// set default options
+			// 
+			// <Nikhil>
+			// gets the service IP and api-server IP from the range
+			// options.Complete(): sets default advertised address to 172.18.0.2
+			// 			   get api server key and cert, set mode as Node and RBAC, set Anonymous.Allow= true
+			//			   set sa.key as sa signing key file & sa issuer as https://kubernetes.default.svc.cluster.local
+			//			   generate JWT token for sa key file
 			completedOptions, err := s.Complete()
 			if err != nil {
 				return err
 			}
 
 			// validate options
+			// skipping for now
 			if errs := completedOptions.Validate(); len(errs) != 0 {
 				return utilerrors.NewAggregate(errs)
 			}
 			// add feature enablement metrics
 			utilfeature.DefaultMutableFeatureGate.AddMetrics()
-			return Run(completedOptions, genericapiserver.SetupSignalHandler())
+			return Run(completedOptions, genericapiserver.SetupSignalHandler())   // <<Run api-server>>
 		},
 		Args: func(cmd *cobra.Command, args []string) error {
 			for _, arg := range args {
@@ -148,7 +171,7 @@ func Run(opts options.CompletedOptions, stopCh <-chan struct{}) error {
 	klog.Infof("Version: %+v", version.Get())
 
 	klog.InfoS("Golang settings", "GOGC", os.Getenv("GOGC"), "GOMAXPROCS", os.Getenv("GOMAXPROCS"), "GOTRACEBACK", os.Getenv("GOTRACEBACK"))
-
+	// node authorizer is part of config
 	config, err := NewConfig(opts)
 	if err != nil {
 		return err
@@ -195,6 +218,7 @@ func CreateServerChain(config CompletedConfig) (*aggregatorapiserver.APIAggregat
 }
 
 // CreateProxyTransport creates the dialer infrastructure to connect to the nodes.
+// client will accept any certs presented by the server
 func CreateProxyTransport() *http.Transport {
 	var proxyDialerFn utilnet.DialFunc
 	// Proxying to pods and services is IP-based... don't expect to be able to verify the hostname
@@ -207,6 +231,11 @@ func CreateProxyTransport() *http.Transport {
 }
 
 // CreateKubeAPIServerConfig creates all the resources for running the API server, but runs none of them
+// createProxyTransport for NO_PROXY and enable/disable HTTP2
+// BuildGenericConfig invokes genericapiserver.NewConfig() which generates a hash for api-server, and returns a big ass config object 
+// then adds run and serving details to the config object
+// creates clientset for accessing api groups
+// creates sharedInformer
 func CreateKubeAPIServerConfig(opts options.CompletedOptions) (
 	*controlplane.Config,
 	aggregatorapiserver.ServiceResolver,

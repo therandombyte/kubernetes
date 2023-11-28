@@ -106,6 +106,9 @@ func NewForConfigAndClient(inConfig *rest.Config, h *http.Client) (Interface, er
 	config.GroupVersion = &schema.GroupVersion{}
 	config.APIPath = "/this-value-should-never-be-sent"
 
+	// <Nikhil>: RESTClientForConfigAndClient returns a RESTClient that satisfies the requested attributes
+	//  on a client Config object. Unlike RESTClientFor, RESTClientForConfigAndClient allows to 
+	// pass an http.Client that is shared between all the API Groups and Versions
 	restClient, err := rest.RESTClientForConfigAndClient(config, h)
 	if err != nil {
 		return nil, err

@@ -31,7 +31,7 @@ func GetNameFromCallsite(ignoredPackages ...string) string {
 	name := "????"
 	const maxStack = 10
 	for i := 1; i < maxStack; i++ {
-		_, file, line, ok := goruntime.Caller(i)
+		_, file, line, ok := goruntime.Caller(i)   // <gotrick> get information about the calling function
 		if !ok {
 			file, line, ok = extractStackCreator()
 			if !ok {
@@ -74,13 +74,19 @@ func trimPackagePrefix(file string) string {
 	return file
 }
 
+/* <Nikhil> (?m) matches multiline, i.e. dont stop at a linebreak
+ (.*)\n\s+ group one or more newline and space because stack trace looks like
+ goroutine 11 [running]:
+  testing.tRunner.func1(0xc420092690)
+        /usr/local/go/src/testing/testing.go:711 +0x2d2
+*/
 var stackCreator = regexp.MustCompile(`(?m)^created by (.*)\n\s+(.*):(\d+) \+0x[[:xdigit:]]+$`)
 
 // extractStackCreator retrieves the goroutine file and line that launched this stack. Returns false
 // if the creator cannot be located.
 // TODO: Go does not expose this via runtime https://github.com/golang/go/issues/11440
 func extractStackCreator() (string, int, bool) {
-	stack := debug.Stack()
+	stack := debug.Stack()   // <gotrick> Stack returns a formatted stack trace of the goroutine that calls it
 	matches := stackCreator.FindStringSubmatch(string(stack))
 	if len(matches) != 4 {
 		return "", 0, false

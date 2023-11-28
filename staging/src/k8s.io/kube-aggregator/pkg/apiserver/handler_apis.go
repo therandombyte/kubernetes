@@ -90,7 +90,7 @@ func (r *apisHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			discoveryGroupList.Groups = append(discoveryGroupList.Groups, *discoveryGroup)
 		}
 	}
-
+	
 	responsewriters.WriteObjectNegotiated(r.codecs, negotiation.DefaultEndpointRestrictions, schema.GroupVersion{}, w, req, http.StatusOK, discoveryGroupList, false)
 }
 

@@ -191,6 +191,15 @@ func (s *Options) AddFlags(fss *cliflag.NamedFlagSets) {
 		"Path to the file that contains the current private key of the service account token issuer. The issuer will sign issued ID tokens with this private key.")
 }
 
+// Params: {"kubernetes.default.svc", "kubernetes.default", "kubernetes"}, 10.96.0.2
+// DefaultAdvertiseAddress(): sets default advertised address to 172.18.0.2
+// MaybeDefaultWithSelfSignedCerts(): keyCert = {/etc/kubernetes/pki/apiserver.crt /etc/kubernetes/pki/apiserver.key}
+// Authorization.Complete(): o.Modes= [Node RBAC]
+// ExternalHost = 172.18.0.2
+// ApplyAuthorization(): Anonymous.Allow = true
+// completed.ServiceAccountSigningKeyFile = /etc/kubernetes/pki/sa.key
+// completed.Authentication.ServiceAccounts.Issuers = https://kubernetes.default.svc.cluster.local
+// JWTTokenGenerator(): generated JWT token based on above issuer and private key file
 func (o *Options) Complete(alternateDNS []string, alternateIPs []net.IP) (CompletedOptions, error) {
 	if o == nil {
 		return CompletedOptions{completedOptions: &completedOptions{}}, nil
@@ -221,10 +230,12 @@ func (o *Options) Complete(alternateDNS []string, alternateIPs []net.IP) (Comple
 		}
 		klog.Infof("external host was not specified, using %v", completed.GenericServerRunOptions.ExternalHost)
 	}
-
+	
 	// put authorization options in final state
+	// set modes: [Node RBAC]
 	completed.Authorization.Complete()
 	// adjust authentication for completed authorization
+	// sets Anonymous.Allow = true
 	completed.Authentication.ApplyAuthorization(completed.Authorization)
 
 	// Use (ServiceAccountSigningKeyFile != "") as a proxy to the user enabling
@@ -232,6 +243,10 @@ func (o *Options) Complete(alternateDNS []string, alternateIPs []net.IP) (Comple
 	// a lot of people when they rotated their serving cert with no idea it was
 	// connected to their service account keys. We are taking this opportunity to
 	// remove this problematic defaulting.
+	// From Docs: Specifies the path to a file that contains the current private key of the service account 
+	// token issuer. The issuer signs issued ID tokens with this private key.
+	// completed.ServiceAccountSigningKeyFile = /etc/kubernetes/pki/sa.key
+	// completed.Authentication.ServiceAccounts.Issuers = https://kubernetes.default.svc.cluster.local
 	if completed.ServiceAccountSigningKeyFile == "" {
 		// Default to the private server key for service account token signing
 		if len(completed.Authentication.ServiceAccounts.KeyFiles) == 0 && completed.SecureServing.ServerCert.CertKey.KeyFile != "" {
@@ -272,6 +287,7 @@ func (o *Options) Complete(alternateDNS []string, alternateIPs []net.IP) (Comple
 		completed.ServiceAccountTokenMaxExpiration = completed.Authentication.ServiceAccounts.MaxExpiration
 	}
 
+	// map is empty, so skip
 	for key, value := range completed.APIEnablement.RuntimeConfig {
 		if key == "v1" || strings.HasPrefix(key, "v1/") ||
 			key == "api/v1" || strings.HasPrefix(key, "api/v1/") {
